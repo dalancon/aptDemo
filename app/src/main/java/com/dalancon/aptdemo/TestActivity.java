@@ -27,8 +27,7 @@ public class TestActivity extends AppCompatActivity {
         viewBinding.bind(this);
 
         tv1.setText("dalancon butterknife");
-
-        Api.getInstance().service.getTransactionFee("https://www.baidu.com");
+//        Api.getInstance().service.getTransactionFee("https://www.baidu.com");
     }
 
     @OnClick(R.id.tv1)
