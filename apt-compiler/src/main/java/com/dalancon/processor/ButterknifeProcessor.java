@@ -111,7 +111,7 @@ public class ButterknifeProcessor {
                 MethodSpec.Builder bindMethodBuilder = MethodSpec.methodBuilder("bind")
                         .addJavadoc("此方法由apt自动生成，请勿修改")
                         .addModifiers(Modifier.PUBLIC)
-                        .addParameter(activityClassName, "target",Modifier.FINAL);
+                        .addParameter(activityClassName, "target", Modifier.FINAL);
                 ClassName utilsClassName = ClassName.bestGuess("com.dalancon.aptdemo.utils.Utils");
 
                 ClassName clickListenerClassName = ClassName.bestGuess("android.view.View.OnClickListener");
@@ -148,6 +148,7 @@ public class ButterknifeProcessor {
                         bindMethodBuilder.addCode("$T.findViewById(target, $L).setOnClickListener($L);\n", utilsClassName, viewId, clickListenerTypeSpec);
 
                     }
+                    onClickElementsMap.remove(activityName);
                 }
 
 
@@ -162,9 +163,66 @@ public class ButterknifeProcessor {
                         .addFileComment("此文件由apt自动生成，请勿修改")
                         .build()
                         .writeTo(abstractProcessor.mFiler);
-
-
             }
+
+
+            //=================== activity-->onclick
+            for (Map.Entry<String, Set<Element>> entry : onClickElementsMap.entrySet()) {
+                String activityName = entry.getKey();
+                Set<Element> filedSet = entry.getValue();
+
+                ClassName activityClassName = ClassName.bestGuess(activityName);
+
+                String simpleName = activityClassName.simpleName();
+
+                ClassName utilsClassName = ClassName.bestGuess("com.dalancon.aptdemo.utils.Utils");
+
+                ClassName clickListenerClassName = ClassName.bestGuess("android.view.View.OnClickListener");
+
+                MethodSpec.Builder bindMethodBuilder = MethodSpec.methodBuilder("bind")
+                        .addJavadoc("此方法由apt自动生成，请勿修改")
+                        .addModifiers(Modifier.PUBLIC)
+                        .addParameter(activityClassName, "target", Modifier.FINAL);
+
+                for (Element clickMethodElement : filedSet) {
+                    ExecutableElement executableElement = (ExecutableElement) clickMethodElement;
+                    int viewId = executableElement.getAnnotation(OnClick.class).value();
+                    /**
+                     *
+                     Utils.findViewById(target, viewid).setOnClickListener(new View.OnClickListener() {
+                    @Override public void onClick(View v) {
+                    target.click();
+                    }
+                    });
+                     */
+
+                    TypeSpec clickListenerTypeSpec = TypeSpec.anonymousClassBuilder("")
+                            .addSuperinterface(clickListenerClassName)
+                            .addMethod(MethodSpec.methodBuilder("onClick")
+                                    .addAnnotation(Override.class)
+                                    .addModifiers(Modifier.PUBLIC)
+                                    .returns(TypeName.VOID)
+                                    .addParameter(ClassName.bestGuess("android.view.View"), "view")
+                                    .addCode("target.$N();", clickMethodElement.getSimpleName())
+                                    .build()).build();
+
+                    bindMethodBuilder.addCode("$T.findViewById(target, $L).setOnClickListener($L);\n", utilsClassName, viewId, clickListenerTypeSpec);
+                }
+
+
+                TypeSpec typeSpec = TypeSpec.classBuilder(simpleName + "_ViewBinding")
+                        .addModifiers(Modifier.FINAL, Modifier.PUBLIC)
+                        .addMethod(bindMethodBuilder.build())
+                        .build();
+
+                String packageName = activityClassName.packageName();
+                JavaFile.builder(packageName, typeSpec)
+                        .addFileComment("此文件由apt自动生成，请勿修改")
+                        .build()
+                        .writeTo(abstractProcessor.mFiler);
+            }
+
+
         } catch (Exception e) {
             System.out.println("error---------->");
             e.printStackTrace();

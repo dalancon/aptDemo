@@ -22,5 +22,8 @@ public class TestActivity1 extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        TestActivity1_ViewBinding binding = new TestActivity1_ViewBinding();
+        binding.bind(this);
+        tv1.setText("hhhhhhhhhhh");
     }
 }
